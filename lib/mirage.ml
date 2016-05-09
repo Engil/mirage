@@ -1229,6 +1229,24 @@ let configure_main_xl ?substitutions ext i =
 
 let clean_main_xl ~root ~name ext = Cmd.remove (root / name ^ ext)
 
+let configure_merlin ~root info =
+  let open Codegen in
+  let pkgs = Info.packages info in
+  let packages = List.fold_left (fun a b -> (Printf.sprintf "PKG %s\n" b) ^ a) "" pkgs in
+  let file = root / ".merlin" in
+  if Sys.file_exists file then
+    ()
+  else (
+    Cmd.with_file file @@ fun fmt ->
+    append fmt "S .";
+    append fmt "B _build";
+    newline fmt;
+    append fmt "%s" packages;
+    Unix.chmod file 0o755
+  )
+
+let clean_merlin _ = ()
+
 let configure_main_xe ~root ~name =
   let open Codegen in
   let file = root / name ^ ".xe" in
@@ -1503,6 +1521,7 @@ let configure i =
       configure_main_xl ".xl" i;
       configure_main_xl ~substitutions:[] ".xl.in" i;
       configure_main_xe ~root ~name;
+      configure_merlin ~root i;
       configure_main_libvirt_xml ~root ~name;
       configure_myocamlbuild_ml ~root;
       configure_makefile ~target ~root ~name ~warn_error i;
@@ -1515,6 +1534,7 @@ let clean i =
       clean_main_xl ~root ~name ".xl";
       clean_main_xl ~root ~name ".xl.in";
       clean_main_xe ~root ~name;
+      clean_merlin ();
       clean_main_libvirt_xml ~root ~name;
       clean_myocamlbuild_ml ~root;
       clean_makefile ~root;
